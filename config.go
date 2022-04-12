@@ -1,6 +1,11 @@
 package logger
 
-import "go.uber.org/zap"
+import (
+	"io"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+)
 
 const (
 	fieldMessage   = "message"
@@ -19,14 +24,34 @@ func buildConfig() zap.Config {
 	return cfg
 }
 
-func NewLogger() (Logger, error) {
+type Option func(*SantanderLogger)
+
+func WithIoWriter(w io.Writer) Option {
+	return func(santanderLogger *SantanderLogger) {
+		ws := zapcore.AddSync(w)
+
+		jsonEncoder := zapcore.NewJSONEncoder(buildConfig().EncoderConfig)
+		core := zapcore.NewCore(jsonEncoder, ws, zap.DebugLevel)
+
+		santanderLogger.logger = zap.New(core)
+	}
+}
+
+func NewLogger(options ...Option) (Logger, error) {
 	cfg := buildConfig()
 
-	logger, err := cfg.Build()
+	zapLogger, err := cfg.Build()
 	if err != nil {
 		return nil, err
 	}
-	return &SantanderLogger{
-		logger: logger,
-	}, nil
+
+	logger := &SantanderLogger{
+		logger: zapLogger,
+	}
+
+	for _, opt := range options {
+		opt(logger)
+	}
+
+	return logger, nil
 }

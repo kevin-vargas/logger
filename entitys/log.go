@@ -2,11 +2,6 @@ package entitys
 
 import "go.uber.org/zap/zapcore"
 
-const (
-	fieldLogLogger = "logger"
-	fieldLogLevel  = "level"
-)
-
 type Log struct {
 	Logger string
 	Level  string

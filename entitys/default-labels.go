@@ -4,16 +4,6 @@ import (
 	"os"
 )
 
-const (
-	fieldLabelApplication = "application"
-	fieldLabelService     = "service"
-	fieldLabelEnvironment = "environment"
-	fieldLabelLibVersion  = "lib_version"
-	fieldLabelLibLanguage = "lib_language"
-	fieldLabelPodName     = "pod_name"
-	fieldLabelNodeName    = "node_name"
-)
-
 type DefaultLabels struct {
 	Application string
 	Service     string

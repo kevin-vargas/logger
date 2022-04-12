@@ -1,6 +1,7 @@
 package entitys
 
 import (
+	"github.com/kevin-vargas/logger/encoder"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -11,19 +12,16 @@ type EncodeConfig struct {
 	LVL Level
 }
 
-const (
-	fieldLabels      = "labels"
-	fieldLog         = "log"
-	fieldTags        = "tags"
-	fieldHttpRequest = "httprequest"
-)
-
 type Message struct {
-	Text        string
-	tags        Tags
-	labels      Labels
-	log         Log
-	httpRequest *HTTPRequest
+	Text         string
+	tags         Tags
+	labels       Labels
+	log          Log
+	event        *Event
+	trace        *Trace
+	err          *Error
+	httpRequest  *HTTPRequest
+	httpResponse *HTTPResponse
 }
 
 func NewMessage(msg string) Message {
@@ -55,6 +53,26 @@ func (message *Message) WithHttpRequest(req HTTPRequest) *Message {
 	return message
 }
 
+func (message *Message) WithHttpReponse(res HTTPResponse) *Message {
+	message.httpResponse = &res
+	return message
+}
+
+func (message *Message) WithEvent(event Event) *Message {
+	message.event = &event
+	return message
+}
+
+func (message *Message) WithTrace(trace Trace) *Message {
+	message.trace = &trace
+	return message
+}
+
+func (message *Message) WithError(err Error) *Message {
+	message.err = &err
+	return message
+}
+
 func (message *Message) Encode(config EncodeConfig) Field {
 	defaultLabels := GetDefaultLabels()
 	defaultLog := GetDefaultLog(config.LVL)
@@ -63,10 +81,14 @@ func (message *Message) Encode(config EncodeConfig) Field {
 }
 
 func (message *Message) MarshalLogObject(zapenc zapcore.ObjectEncoder) error {
-	enc := GetEncoder(zapenc)
+	enc := encoder.Get(zapenc)
 	enc.AddObject(fieldLabels, &message.labels)
 	enc.AddObject(fieldLog, &message.log)
 	enc.AddStringsValid(fieldTags, message.tags)
 	enc.AddObjectValid(fieldHttpRequest, message.httpRequest)
+	enc.AddObjectValid(fieldHttpResponse, message.httpResponse)
+	enc.AddObjectValid(fieldEvent, message.event)
+	enc.AddObjectValid(fieldTrace, message.trace)
+	enc.AddObjectValid(fieldError, message.err)
 	return nil
 }

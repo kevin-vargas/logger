@@ -1,4 +1,4 @@
-package entitys
+package encoder
 
 import (
 	"reflect"
@@ -11,7 +11,7 @@ type ObjectEncoder struct {
 	zapcore.ObjectEncoder
 }
 
-func GetEncoder(enc zapcore.ObjectEncoder) ObjectEncoder {
+func Get(enc zapcore.ObjectEncoder) ObjectEncoder {
 	return ObjectEncoder{
 		enc,
 	}
@@ -24,6 +24,11 @@ func (enc *ObjectEncoder) AddStrings(key string, value []string) {
 func (enc *ObjectEncoder) AddStringsValid(key string, value []string) {
 	if len(value) > 0 {
 		enc.AddStrings(key, value)
+	}
+}
+func (enc *ObjectEncoder) AddBytesValid(key string, value []byte) {
+	if len(value) > 0 {
+		enc.AddByteString(key, value)
 	}
 }
 
