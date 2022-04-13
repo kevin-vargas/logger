@@ -24,8 +24,8 @@ type Message struct {
 	httpResponse *HTTPResponse
 }
 
-func NewMessage(msg string) Message {
-	return Message{
+func NewMessage(msg string) *Message {
+	return &Message{
 		Text:   msg,
 		tags:   make(Tags, 0),
 		labels: make(Labels),
