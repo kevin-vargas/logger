@@ -12,7 +12,6 @@ import (
 type (
 	RequestLogger  func(l logger.Logger, r *http.Request) error
 	ResponseLogger func(l logger.Logger, r *ResponseObserver)
-	LoggerBuilder  func(r *http.Request) logger.Logger
 )
 
 type Option func(*LoggingHandler)
@@ -31,24 +30,23 @@ func WithRequestLogging(rl RequestLogger) Option {
 	}
 }
 
-//WithLogger allows to build a new logger from the current http.Request
-func WithLogger(builder LoggerBuilder) Option {
+func WithLogger(logger logger.Logger) Option {
 	return func(args *LoggingHandler) {
-		args.builder = builder
+		args.instance = logger
 	}
 }
 
 type LoggingHandler struct {
-	builder LoggerBuilder
-	reqLog  RequestLogger
-	respLog ResponseLogger
+	instance logger.Logger
+	reqLog   RequestLogger
+	respLog  ResponseLogger
 }
 
 func NewLoggingHandler(options ...Option) *LoggingHandler {
 	handler := &LoggingHandler{
-		reqLog:  defaultLogRequest,
-		respLog: defaultLogResponse,
-		builder: defaultLoggerBuilder,
+		reqLog:   defaultLogRequest,
+		respLog:  defaultLogResponse,
+		instance: logger.Get(),
 	}
 
 	for _, opt := range options {
@@ -58,22 +56,19 @@ func NewLoggingHandler(options ...Option) *LoggingHandler {
 	return handler
 }
 func (h *LoggingHandler) Logging(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		l := h.builder(r)
+	return http.HandlerFunc(func(writer http.ResponseWriter, req *http.Request) {
+		loggerInstance := h.instance
 
-		ctx := logger.WithLogger(r.Context(), l)
-		r = r.Clone(ctx)
+		observer := &ResponseObserver{ResponseWriter: writer}
 
-		o := &ResponseObserver{ResponseWriter: w}
-
-		err := h.reqLog(l, r)
+		err := h.reqLog(loggerInstance, req)
 		if err != nil {
 			// TODO: log with err
 			// l.Error("LoggingHandler: An error occurred during request logging %v", logger.Err(err))
 		}
 
-		next.ServeHTTP(o, r)
-		h.respLog(l, o)
+		next.ServeHTTP(observer, req)
+		h.respLog(loggerInstance, observer)
 
 	})
 }
@@ -86,12 +81,19 @@ func (h *LoggingHandler) Handle(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func defaultLogRequest(l logger.Logger, r *http.Request) (err error) {
+	/*
+		var log *bytes.Buffer = &bytes.Buffer{}
+		tee := io.TeeReader(r.Body, log)
+		bodyBytes, err := ioutil.ReadAll(tee)
+	*/
+
 	bodyBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return err
 	}
 	r.Body.Close()
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+	// r.Body = ioutil.NopCloser(log)
 	req := entitys.HTTPRequest{
 		Method:   r.Method,
 		Referrer: r.Referer(),
@@ -101,7 +103,7 @@ func defaultLogRequest(l logger.Logger, r *http.Request) (err error) {
 		},
 	}
 	msg := entitys.NewMessage("request").WithHttpRequest(req)
-	l.Info(*msg)
+	l.Info(msg)
 	return
 }
 
@@ -113,15 +115,5 @@ func defaultLogResponse(l logger.Logger, o *ResponseObserver) {
 		},
 	}
 	msg := entitys.NewMessage("Response").WithHttpReponse(res)
-	l.Info(*msg)
-}
-
-//defaultLoggerBuilder builds a default logger and adds it to the current context
-func defaultLoggerBuilder(r *http.Request) logger.Logger {
-	l, err := logger.NewLogger()
-	if err != nil {
-		return nil
-	}
-
-	return l
+	l.Info(msg)
 }
