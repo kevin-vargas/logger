@@ -3,8 +3,11 @@ package entitys
 import (
 	"os"
 	"sync"
+
+	"github.com/kevin-vargas/logger/strings"
 )
 
+var or = strings.OR
 var instance Labels
 var once sync.Once
 
@@ -21,11 +24,4 @@ func GetDefaultLabels() Labels {
 		instance = labels
 	})
 	return instance
-}
-
-func or(str string, defaultStr string) string {
-	if str == "" {
-		return defaultStr
-	}
-	return str
 }

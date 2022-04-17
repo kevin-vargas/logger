@@ -1,5 +1,7 @@
 package entitys
 
+import "github.com/kevin-vargas/logger/strings"
+
 type Level int8
 
 const (
@@ -11,20 +13,15 @@ const (
 	FatalLevel
 )
 
+var levels map[Level]string = map[Level]string{
+	DebugLevel: "debug",
+	InfoLevel:  "info",
+	WarnLevel:  "warn",
+	ErrorLevel: "error",
+	PanicLevel: "panic",
+	FatalLevel: "fatal",
+}
+
 func (l Level) String() string {
-	switch l {
-	case DebugLevel:
-		return "debug"
-	case InfoLevel:
-		return "info"
-	case WarnLevel:
-		return "warn"
-	case ErrorLevel:
-		return "error"
-	case PanicLevel:
-		return "panic"
-	case FatalLevel:
-		return "fatal"
-	}
-	return "UNKNOWN"
+	return strings.OR(levels[l], "UNKNOWN")
 }
