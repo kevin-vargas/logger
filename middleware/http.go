@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/kevin-vargas/logger"
-	"github.com/kevin-vargas/logger/entitys"
+	"github.com/kevin-vargas/logger/entities"
 )
 
 type (
@@ -94,26 +94,26 @@ func defaultLogRequest(l logger.Logger, r *http.Request) (err error) {
 	r.Body.Close()
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 	// r.Body = ioutil.NopCloser(log)
-	req := entitys.HTTPRequest{
+	req := entities.HTTPRequest{
 		Method:   r.Method,
 		Referrer: r.Referer(),
-		Body: &entitys.HTTPRequestBody{
+		Body: &entities.HTTPRequestBody{
 			Content: bodyBytes,
-			Headers: entitys.Headers(r.Header),
+			Headers: entities.Headers(r.Header),
 		},
 	}
-	msg := entitys.NewMessage("request").WithHttpRequest(req)
+	msg := entities.NewMessage("request").WithHttpRequest(req)
 	l.Info(msg)
 	return
 }
 
 func defaultLogResponse(l logger.Logger, o *ResponseObserver) {
-	res := entitys.HTTPResponse{
+	res := entities.HTTPResponse{
 		StatusCode: int64(o.Status),
-		Body: &entitys.HTTPResponseBody{
+		Body: &entities.HTTPResponseBody{
 			Content: o.Response,
 		},
 	}
-	msg := entitys.NewMessage("Response").WithHttpReponse(res)
+	msg := entities.NewMessage("Response").WithHttpReponse(res)
 	l.Info(msg)
 }

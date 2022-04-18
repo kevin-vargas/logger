@@ -1,4 +1,4 @@
-package entitys
+package entities
 
 func GetDefaultLog(level Level) (log Log) {
 	return Log{

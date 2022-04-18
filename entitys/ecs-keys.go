@@ -1,4 +1,4 @@
-package entitys
+package entities
 
 // Message
 const (

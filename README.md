@@ -50,7 +50,7 @@ The project is structured in the following way:
 
 |-- encoder
 
-|-- entitys
+|-- entities
 
 |-- middleware
 
@@ -70,7 +70,7 @@ Brief project structure summary:
 
 - encoder: `Custom encoder with validations`.
 
-- entitys: `Domain entities used in the library`.
+- entities: `Domain entities used in the library`.
 
 - middleware: `Http interceptors implemented for logging purposes`.
 
@@ -149,6 +149,10 @@ loggingHandler := middleware.NewLoggingHandler()
 // Handler applied to '/ping' endpoint on request and response
 mux.HandleFunc("/ping", loggingHandler.Handle(PingHandler))
 
+// Logging apply to all endpoints
+server := http.Server{Addr: ":9001", Handler: loggingHandler.Logging(mux)}
+server.ListenAndServe()
+
 ```
 
   
@@ -177,7 +181,7 @@ After including the references from the previous require/import statement we can
 // code to execute in order to perform an application logging as info severity
 
 const log = logger.get();
-var msg *entitys.Message
+var msg *entities.Message
 log.info(msg)
 
 ```
@@ -226,23 +230,23 @@ func (message *Message) WithHttpReponse(res HTTPResponse) *Message
 ```
 Example of building a msg
 ```go
-var erre = entitys.Error{
+var erre = entities.Error{
 	Message: "_message",
 	Type: "_type",
 	StackTrace: "_stack_trace",
 }
-var trace = entitys.Trace{
+var trace = entities.Trace{
 	ID: "id_trace",
 }
-var event = entitys.Event{
+var event = entities.Event{
 	Action: "action",
 	Category: []string{"category1", "category2"},
 	Module: "module",
 	Type: "type",
 	Original: "original",
 }
-var tags = entitys.Tags{"tag1", "tag2", "tag3"}
-var msg = entitys.NewMessage("msg").
+var tags = entities.Tags{"tag1", "tag2", "tag3"}
+var msg = entities.NewMessage("msg").
 WithError(erre).
 WithEvent(event).
 WithTrace(trace).

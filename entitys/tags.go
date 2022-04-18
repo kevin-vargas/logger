@@ -1,3 +1,3 @@
-package entitys
+package entities
 
 type Tags []string

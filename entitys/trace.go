@@ -1,4 +1,4 @@
-package entitys
+package entities
 
 import "go.uber.org/zap/zapcore"
 
