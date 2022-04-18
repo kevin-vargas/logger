@@ -15,7 +15,7 @@ Table of contents:
 
 - [Library Setup](#-library-setup)
 
-- [Library Configuration Properties](#library-configuration-properties)
+- [Logging](#-logging)
 
 - [Automatic request response log setup](#-automatic-request-response-log-setup)
 
@@ -23,9 +23,8 @@ Table of contents:
 
 - [Building a message](#building-a-message)
 
-- [Building an audit event](#building-an-audit-event)
+- [Audit](#Audit)
 
-- [Logging events](#logging-events)
 
 ## Summary
 
