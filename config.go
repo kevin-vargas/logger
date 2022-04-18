@@ -2,6 +2,7 @@ package logger
 
 import (
 	"io"
+	"sync"
 
 	"github.com/kevin-vargas/logger/audit"
 	"go.uber.org/zap"
@@ -53,6 +54,7 @@ func NewLogger(options ...Option) (Logger, error) {
 	}
 
 	logger := &SantanderLogger{
+		once:   &sync.Once{},
 		logger: zapLogger,
 	}
 
