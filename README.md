@@ -1,6 +1,8 @@
 
 # ⚙️ Logging and tracing Lib
 
+  
+
 Table of contents:
 
 - [Logging and tracing Lib](#️-logging-and-tracing-lib)
@@ -127,8 +129,6 @@ This library considers the possibility to automatically log the http requests an
 
 ---
 
-\
-
 In order to setup the automatic requests & responses logger you need to configure it in you application configuration file and specify the interceptors as the following description illustrates:
 
 First we need to add the needed require/import statement:
@@ -248,4 +248,36 @@ WithError(erre).
 WithEvent(event).
 WithTrace(trace).
 WithTags(tags)
+```
+
+### Audit
+We can use a custom audit client when making custom logging instance
+```go
+var auditClientCustom audit.Client 
+log, err := logger.NewLogger(logger.WithAuditClient(auditClientCustom))
+
+```
+if we use the default logger then we will use the default audit or we can specify it as follows
+```go
+var defaultClientAudit audit.Client = audit.Get()
+log, err := logger.NewLogger(logger.WithAuditClient(defaultClientAudit))
+
+```
+Same as
+```go
+log := logger.Get()
+
+```
+Now we can use the audit method with a audit message
+```go
+var msg *audit.Message = &audit.Message{
+	Topic: "topic_test",
+	Payload: audit.Payload{
+	Type: audit.DATABASE_REQUEST,
+	Nup: "nup",
+	CorrelationId: "correlation_id",
+	},
+}
+log.Audit(msg)
+
 ```

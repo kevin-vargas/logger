@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"github.com/kevin-vargas/logger/audit"
 	"github.com/kevin-vargas/logger/entitys"
 	"go.uber.org/zap"
 )
@@ -17,7 +18,8 @@ type Logger interface {
 }
 
 type SantanderLogger struct {
-	logger *zap.Logger
+	auditLogger audit.Client
+	logger      *zap.Logger
 }
 
 func (l *SantanderLogger) Debug(message *entitys.Message) {
@@ -46,4 +48,12 @@ func (l *SantanderLogger) Error(message *entitys.Message) {
 		LVL: entitys.ErrorLevel,
 	}
 	l.logger.Error(message.Text, message.Encode(config))
+}
+
+// TODO: safe concurrent audit
+func (l *SantanderLogger) Audit(message *audit.Message) {
+	if l.auditLogger == nil {
+		l.auditLogger = audit.Get()
+	}
+	l.auditLogger.Audit(message)
 }

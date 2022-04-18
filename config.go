@@ -3,6 +3,7 @@ package logger
 import (
 	"io"
 
+	"github.com/kevin-vargas/logger/audit"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -34,6 +35,12 @@ func WithIoWriter(w io.Writer) Option {
 		core := zapcore.NewCore(jsonEncoder, ws, zap.DebugLevel)
 
 		santanderLogger.logger = zap.New(core)
+	}
+}
+
+func WithAuditClient(client audit.Client) Option {
+	return func(santanderLogger *SantanderLogger) {
+		santanderLogger.auditLogger = client
 	}
 }
 

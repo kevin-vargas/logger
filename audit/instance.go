@@ -8,12 +8,12 @@ import (
 )
 
 var once sync.Once
-var instance *Client
+var instance Client
 
 // TODO: check default config audit
-func Get() *Client {
+func Get() Client {
 	once.Do(func() {
-		instance = &Client{
+		instance = &client{
 			defaultTopic: variables.OR(env_topic, ""),
 			publisher: pubsub.NewRestPublisher(&pubsub.ConfigRestPublisher{
 				URL:      variables.ORPanic(env_url),
