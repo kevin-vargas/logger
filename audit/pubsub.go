@@ -10,7 +10,7 @@ type Client interface {
 }
 type client struct {
 	defaultTopic string
-	publisher    pubsub.Pubisher
+	publisher    pubsub.Publisher
 }
 
 // if we set a default topic it will override actual message topic

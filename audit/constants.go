@@ -8,5 +8,5 @@ const (
 )
 
 const (
-	RETRYS = 3
+	RETRIES = 3
 )

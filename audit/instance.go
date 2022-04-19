@@ -19,7 +19,7 @@ func Get() Client {
 				URL:      variables.ORPanic(env_url),
 				Username: variables.ORPanic(env_user),
 				Password: variables.ORPanic(env_password),
-				Retrys:   RETRYS,
+				Retries:  RETRIES,
 			}),
 		}
 	})

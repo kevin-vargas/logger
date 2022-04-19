@@ -6,7 +6,7 @@ type ConfigRestPublisher struct {
 	URL      string
 	Username string
 	Password string
-	Retrys   int
+	Retries  int
 }
 
 type RestPublisher struct {
@@ -17,7 +17,7 @@ func withBaseConfig(client *resty.Client, cfg *ConfigRestPublisher) *resty.Clien
 	return client.
 		SetBaseURL(cfg.URL).
 		SetBasicAuth(cfg.Username, cfg.Password).
-		SetRetryCount(cfg.Retrys)
+		SetRetryCount(cfg.Retries)
 }
 
 func NewRestPublisher(cfg *ConfigRestPublisher) *RestPublisher {

@@ -5,12 +5,12 @@ import (
 	"os"
 	"strings"
 
-	. "github.com/kevin-vargas/logger/strings"
+	lstrings "github.com/kevin-vargas/logger/strings"
 )
 
 // TODO: Cache env variables?
 func OR(envVar string, defaultStr string) string {
-	return OR(os.Getenv(envVar), defaultStr)
+	return lstrings.OR(os.Getenv(envVar), defaultStr)
 }
 
 func ORError(envVar string) (str string, err error) {

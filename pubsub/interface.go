@@ -1,5 +1,5 @@
 package pubsub
 
-type Pubisher interface {
+type Publisher interface {
 	Publish(topic string, payload interface{}) error
 }
