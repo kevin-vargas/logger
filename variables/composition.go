@@ -8,13 +8,15 @@ import (
 	lstrings "github.com/kevin-vargas/logger/strings"
 )
 
+var getEnv = os.Getenv
+
 // TODO: Cache env variables?
 func OR(envVar string, defaultStr string) string {
-	return lstrings.OR(os.Getenv(envVar), defaultStr)
+	return lstrings.OR(getEnv(envVar), defaultStr)
 }
 
 func ORError(envVar string) (str string, err error) {
-	result := os.Getenv(envVar)
+	result := getEnv(envVar)
 	if result == "" {
 		var sb strings.Builder
 		sb.WriteString("Not found env variable: ")
@@ -25,7 +27,7 @@ func ORError(envVar string) (str string, err error) {
 }
 
 func ORPanic(envVar string) (str string) {
-	result := os.Getenv(envVar)
+	result := getEnv(envVar)
 	if result == "" {
 		var sb strings.Builder
 		sb.WriteString("Not found env variable: ")

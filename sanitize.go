@@ -1,6 +1,9 @@
 package logger
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 var token = fmt.Sprintf("\"%v\":", fieldTimestamp)
 
@@ -28,4 +31,18 @@ func sanitizeTimestamp(raw []byte) []byte {
 		}
 	}
 	return raw
+}
+
+const (
+	NULL_CHAR = "\x00"
+	EMPTY     = ""
+)
+
+func sanitize(raw []byte) string {
+
+	raw = sanitizeTimestamp(raw)
+
+	str := string(raw)
+
+	return strings.Replace(str, NULL_CHAR, EMPTY, -1)
 }

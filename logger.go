@@ -15,6 +15,7 @@ type Logger interface {
 	Info(message *entities.Message)
 	Warn(message *entities.Message)
 	Error(message *entities.Message)
+	Audit(message *audit.Message)
 	// Panic(msg string, fields ...Field)
 	// Fatal(msg string, fields ...Field)
 }

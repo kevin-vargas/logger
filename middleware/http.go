@@ -81,19 +81,12 @@ func (h *LoggingHandler) Handle(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func defaultLogRequest(l logger.Logger, r *http.Request) (err error) {
-	/*
-		var log *bytes.Buffer = &bytes.Buffer{}
-		tee := io.TeeReader(r.Body, log)
-		bodyBytes, err := ioutil.ReadAll(tee)
-	*/
-
 	bodyBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return err
 	}
 	r.Body.Close()
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-	// r.Body = ioutil.NopCloser(log)
 	req := entities.HTTPRequest{
 		Method:   r.Method,
 		Referrer: r.Referer(),
@@ -102,7 +95,7 @@ func defaultLogRequest(l logger.Logger, r *http.Request) (err error) {
 			Headers: entities.Headers(r.Header),
 		},
 	}
-	msg := entities.NewMessage("request").WithHttpRequest(req)
+	msg := entities.NewMessage("Request").WithHttpRequest(req)
 	l.Info(msg)
 	return
 }
