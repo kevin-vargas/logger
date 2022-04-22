@@ -1,6 +1,10 @@
 package pubsub
 
-import "github.com/go-resty/resty/v2"
+import (
+	"errors"
+
+	"github.com/go-resty/resty/v2"
+)
 
 type ConfigRestPublisher struct {
 	URL      string
@@ -17,7 +21,15 @@ func withBaseConfig(client *resty.Client, cfg *ConfigRestPublisher) *resty.Clien
 	return client.
 		SetBaseURL(cfg.URL).
 		SetBasicAuth(cfg.Username, cfg.Password).
-		SetRetryCount(cfg.Retries)
+		SetRetryCount(cfg.Retries).
+		AddRetryAfterErrorCondition()
+	/*
+		AddRetryCondition(
+			func(r *resty.Response, err error) bool {
+				return (r.StatusCode() / 200) != 1
+			},
+		)
+	*/
 }
 
 func NewRestPublisher(cfg *ConfigRestPublisher) *RestPublisher {
@@ -32,9 +44,12 @@ func (rp *RestPublisher) Publish(topic string, payload interface{}) error {
 		Topic:   topic,
 		Payload: payload,
 	}
-	_, err := rp.client.R().SetBody(message).Post("/publish")
+	res, err := rp.client.R().SetBody(message).Post("/publish")
 	if err != nil {
 		return err
+	}
+	if res.StatusCode()/200 != 1 {
+		return errors.New("Invalid status code")
 	}
 	return nil
 }
