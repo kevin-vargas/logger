@@ -12,9 +12,15 @@ type ConfigRestPublisher struct {
 	Password string
 	Retries  int
 }
+type Option func(r *RestPublisher)
+type FallBackMethod func(topic string, payload interface{})
+
+var defaultFallBackMethod FallBackMethod = func(topic string, payload interface{}) {
+}
 
 type RestPublisher struct {
-	client *resty.Client
+	fallback FallBackMethod
+	client   *resty.Client
 }
 
 func withBaseConfig(client *resty.Client, cfg *ConfigRestPublisher) *resty.Client {
@@ -23,20 +29,22 @@ func withBaseConfig(client *resty.Client, cfg *ConfigRestPublisher) *resty.Clien
 		SetBasicAuth(cfg.Username, cfg.Password).
 		SetRetryCount(cfg.Retries).
 		AddRetryAfterErrorCondition()
-	/*
-		AddRetryCondition(
-			func(r *resty.Response, err error) bool {
-				return (r.StatusCode() / 200) != 1
-			},
-		)
-	*/
 }
-
-func NewRestPublisher(cfg *ConfigRestPublisher) *RestPublisher {
-	client := withBaseConfig(resty.New(), cfg)
-	return &RestPublisher{
-		client: client,
+func WithFallBackMethod(method FallBackMethod) Option {
+	return func(r *RestPublisher) {
+		r.fallback = method
 	}
+}
+func NewRestPublisher(cfg *ConfigRestPublisher, options ...Option) *RestPublisher {
+	client := withBaseConfig(resty.New(), cfg)
+	publisher := &RestPublisher{
+		fallback: defaultFallBackMethod,
+		client:   client,
+	}
+	for _, option := range options {
+		option(publisher)
+	}
+	return publisher
 }
 
 func (rp *RestPublisher) Publish(topic string, payload interface{}) error {
@@ -45,11 +53,15 @@ func (rp *RestPublisher) Publish(topic string, payload interface{}) error {
 		Payload: payload,
 	}
 	res, err := rp.client.R().SetBody(message).Post("/publish")
-	if err != nil {
+
+	if res.StatusCode()/200 != 1 || err != nil {
+		if rp.fallback != nil {
+			rp.fallback(topic, payload)
+		}
+		if err == nil {
+			return errors.New("Invalid status code")
+		}
 		return err
-	}
-	if res.StatusCode()/200 != 1 {
-		return errors.New("Invalid status code")
 	}
 	return nil
 }
