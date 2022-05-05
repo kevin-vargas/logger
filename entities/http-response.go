@@ -23,6 +23,5 @@ type HTTPResponse struct {
 func (res *HTTPResponse) MarshalLogObject(zapenc zapcore.ObjectEncoder) error {
 	enc := encoder.Get(zapenc)
 	enc.AddInt64(fieldHttpResponseStatusCode, res.StatusCode)
-	enc.AddObjectValid(fieldHttpResponseBody, res.Body)
-	return nil
+	return enc.AddObjectValid(fieldHttpResponseBody, res.Body)
 }

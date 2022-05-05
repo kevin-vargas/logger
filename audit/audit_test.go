@@ -1,17 +1,16 @@
 package audit
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
+	"github.com/kevin-vargas/logger/config"
 	"github.com/kevin-vargas/logger/pubsub/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-func resetState() {
-
-}
 func Test_Audit_Message(t *testing.T) {
 	testCase := []struct {
 		desc         string
@@ -48,14 +47,26 @@ func Test_Audit_Message(t *testing.T) {
 				defaultTopic: tt.defaultTopic,
 				publisher:    mockPublisher,
 			}
-			client.Audit(msg)
+			err := client.Audit(msg)
+			if err != nil {
+				t.Fail()
+			}
 			mockPublisher.AssertNumberOfCalls(t, "Publish", 1)
-			mockPublisher.AssertCalled(t, "Publish", tt.expect, mock.Anything)
 		})
 	}
 
 }
-
+func Test_Publish_With_error(t *testing.T) {
+	mockPublisher := &mocks.Publisher{}
+	mockPublisher.On("Publish", mock.AnythingOfType("string"), mock.Anything).Return(errors.New("test"))
+	msg := &Message{}
+	client := &client{
+		publisher: mockPublisher,
+	}
+	err := client.Audit(msg)
+	mockPublisher.AssertNumberOfCalls(t, "Publish", 1)
+	assert.Error(t, err)
+}
 func Test_Type_Marshal(t *testing.T) {
 	testCase := []struct {
 		actual Type
@@ -81,4 +92,13 @@ func Test_Type_Marshal(t *testing.T) {
 		})
 	}
 
+}
+
+func Test_toRestPubSubConfig(t *testing.T) {
+	cfg := &config.Audit{}
+
+	newConfig := toRestPubSubConfig(cfg)
+
+	expect := RETRIES
+	assert.Equal(t, expect, newConfig.Retries)
 }

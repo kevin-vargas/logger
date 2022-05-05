@@ -9,13 +9,20 @@ type Publisher struct {
 	mock.Mock
 }
 
-// Publish provides a mock function with given fields: topic, payload
-func (_m *Publisher) Publish(topic string, payload interface{}) error {
-	ret := _m.Called(topic, payload)
+// Publish provides a mock function with given fields: topic, payload, fallbacks
+func (_m *Publisher) Publish(topic string, payload interface{}, fallbacks ...func(string, interface{})) error {
+	_va := make([]interface{}, len(fallbacks))
+	for _i := range fallbacks {
+		_va[_i] = fallbacks[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, topic, payload)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, interface{}) error); ok {
-		r0 = rf(topic, payload)
+	if rf, ok := ret.Get(0).(func(string, interface{}, ...func(string, interface{})) error); ok {
+		r0 = rf(topic, payload, fallbacks...)
 	} else {
 		r0 = ret.Error(0)
 	}

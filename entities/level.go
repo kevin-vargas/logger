@@ -1,7 +1,5 @@
 package entities
 
-import "github.com/kevin-vargas/logger/strings"
-
 type Level int8
 
 const (
@@ -23,5 +21,5 @@ var levels map[Level]string = map[Level]string{
 }
 
 func (l Level) String() string {
-	return strings.OR(levels[l], "UNKNOWN")
+	return levels[l]
 }

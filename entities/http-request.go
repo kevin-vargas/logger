@@ -57,6 +57,5 @@ func (req *HTTPRequest) MarshalLogObject(zapenc zapcore.ObjectEncoder) error {
 	enc := encoder.Get(zapenc)
 	enc.AddString(fieldHttpRequestMethod, req.Method)
 	enc.AddString(fieldHttpRequestReferrer, req.Referrer)
-	enc.AddObjectValid(fieldHttpRequestBody, req.Body)
-	return nil
+	return enc.AddObjectValid(fieldHttpRequestBody, req.Body)
 }

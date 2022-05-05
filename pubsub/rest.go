@@ -2,6 +2,7 @@ package pubsub
 
 import (
 	"errors"
+	"time"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -12,15 +13,11 @@ type ConfigRestPublisher struct {
 	Password string
 	Retries  int
 }
-type Option func(r *RestPublisher)
-type FallBackMethod func(topic string, payload interface{})
 
-var defaultFallBackMethod FallBackMethod = func(topic string, payload interface{}) {
-}
+type Option func(r *RestPublisher)
 
 type RestPublisher struct {
-	fallback FallBackMethod
-	client   *resty.Client
+	client *resty.Client
 }
 
 func withBaseConfig(client *resty.Client, cfg *ConfigRestPublisher) *resty.Client {
@@ -28,18 +25,15 @@ func withBaseConfig(client *resty.Client, cfg *ConfigRestPublisher) *resty.Clien
 		SetBaseURL(cfg.URL).
 		SetBasicAuth(cfg.Username, cfg.Password).
 		SetRetryCount(cfg.Retries).
-		AddRetryAfterErrorCondition()
+		SetDisableWarn(true).
+		SetLogger(discardLog()).
+		SetTimeout(timeout_request * time.Millisecond)
 }
-func WithFallBackMethod(method FallBackMethod) Option {
-	return func(r *RestPublisher) {
-		r.fallback = method
-	}
-}
+
 func NewRestPublisher(cfg *ConfigRestPublisher, options ...Option) *RestPublisher {
 	client := withBaseConfig(resty.New(), cfg)
 	publisher := &RestPublisher{
-		fallback: defaultFallBackMethod,
-		client:   client,
+		client: client,
 	}
 	for _, option := range options {
 		option(publisher)
@@ -47,7 +41,7 @@ func NewRestPublisher(cfg *ConfigRestPublisher, options ...Option) *RestPublishe
 	return publisher
 }
 
-func (rp *RestPublisher) Publish(topic string, payload interface{}) error {
+func (rp *RestPublisher) Publish(topic string, payload interface{}, fallbacks ...FallBackMethod) error {
 	message := &Message{
 		Topic:   topic,
 		Payload: payload,
@@ -55,8 +49,8 @@ func (rp *RestPublisher) Publish(topic string, payload interface{}) error {
 	res, err := rp.client.R().SetBody(message).Post("/publish")
 
 	if res.StatusCode()/200 != 1 || err != nil {
-		if rp.fallback != nil {
-			rp.fallback(topic, payload)
+		for _, fallback := range fallbacks {
+			fallback(topic, payload)
 		}
 		if err == nil {
 			return errors.New("Invalid status code")

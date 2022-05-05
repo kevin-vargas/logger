@@ -1,11 +1,14 @@
 package logger
 
 import (
+	"encoding/json"
 	"sync"
 
 	"github.com/kevin-vargas/logger/audit"
+	"github.com/kevin-vargas/logger/config"
 	"github.com/kevin-vargas/logger/entities"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type Field = zap.Field
@@ -21,44 +24,82 @@ type Logger interface {
 }
 
 type SantanderLogger struct {
-	once        *sync.Once
-	auditLogger audit.Client
-	logger      *zap.Logger
+	once          *sync.Once
+	config        *config.Logger
+	auditClient   audit.Client
+	logger        *zap.Logger
+	defaultLabels entities.Labels
+	fallback      audit.FallBackMethod
+}
+
+func (l *SantanderLogger) configMessage(lvl entities.Level, message *entities.Message) (string, zapcore.Field) {
+	config := entities.EncodeConfig{
+		LVL: lvl,
+	}
+	l.addDefaultFieldsMessage(message)
+	return message.Text, message.Encode(config)
 }
 
 func (l *SantanderLogger) Debug(message *entities.Message) {
-	config := entities.EncodeConfig{
-		LVL: entities.DebugLevel,
-	}
-	l.logger.Debug(message.Text, message.Encode(config))
+	text, field := l.configMessage(entities.DebugLevel, message)
+	l.logger.Debug(text, field)
 }
 
 func (l *SantanderLogger) Info(message *entities.Message) {
-	config := entities.EncodeConfig{
-		LVL: entities.InfoLevel,
-	}
-	l.logger.Info(message.Text, message.Encode(config))
+	text, field := l.configMessage(entities.InfoLevel, message)
+	l.logger.Info(text, field)
 }
 
 func (l *SantanderLogger) Warn(message *entities.Message) {
-	config := entities.EncodeConfig{
-		LVL: entities.WarnLevel,
-	}
-	l.logger.Warn(message.Text, message.Encode(config))
+	text, field := l.configMessage(entities.WarnLevel, message)
+	l.logger.Warn(text, field)
 }
 
 func (l *SantanderLogger) Error(message *entities.Message) {
-	config := entities.EncodeConfig{
-		LVL: entities.ErrorLevel,
-	}
-	l.logger.Error(message.Text, message.Encode(config))
+	text, field := l.configMessage(entities.ErrorLevel, message)
+	l.logger.Error(text, field)
 }
 
 func (l *SantanderLogger) Audit(message *audit.Message) {
 	l.once.Do(func() {
-		if l.auditLogger == nil {
-			l.auditLogger = audit.Get()
+		if l.auditClient == nil {
+			l.auditClient = audit.New(l.config.Audit)
+		}
+		if l.fallback == nil {
+			l.fallback = defaultAuditFallBack(l)
 		}
 	})
-	l.auditLogger.Audit(message)
+	err := l.auditClient.Audit(message, l.fallback)
+	if err != nil {
+		msg := entities.
+			NewMessage("On Audit").
+			WithError(entities.Error{
+				Message: err.Error(),
+			})
+		l.Error(msg)
+	}
+}
+
+func defaultAuditFallBack(l Logger) audit.FallBackMethod {
+	return func(topic string, payload *audit.Payload) {
+		json, _ := json.Marshal(payload)
+		trace := entities.Trace{
+			ID: payload.CorrelationId,
+		}
+		msg := entities.NewMessage(string(json)).
+			WithTags([]string{"audit"}).
+			WithTrace(trace)
+		l.Info(msg)
+	}
+}
+
+func (l *SantanderLogger) addDefaultFieldsMessage(m *entities.Message) *entities.Message {
+	if l.config != nil {
+		m.
+			WithLabels(entities.GetDefaultLabels(l.config))
+	}
+	if l.defaultLabels != nil {
+		m.WithLabels(l.defaultLabels)
+	}
+	return m
 }

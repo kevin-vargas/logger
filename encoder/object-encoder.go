@@ -4,6 +4,7 @@ import (
 	"reflect"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type objectEncoder struct {
@@ -32,10 +33,11 @@ func (enc *objectEncoder) AddBytesValid(key string, value []byte) {
 }
 
 // TODO: remove use of reflection
-func (enc *objectEncoder) AddObjectValid(key string, marshaler ObjectMarshaler) {
+func (enc *objectEncoder) AddObjectValid(key string, marshaler zapcore.ObjectMarshaler) (err error) {
 	if !reflect.ValueOf(marshaler).IsNil() {
-		enc.AddObject(key, marshaler)
+		return enc.AddObject(key, marshaler)
 	}
+	return
 }
 
 func (enc *objectEncoder) AddStringValid(key string, value string) {

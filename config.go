@@ -5,6 +5,8 @@ import (
 	"sync"
 
 	"github.com/kevin-vargas/logger/audit"
+	"github.com/kevin-vargas/logger/config"
+	"github.com/kevin-vargas/logger/entities"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -41,13 +43,30 @@ func WithIoWriter(w io.Writer) Option {
 
 func WithAuditClient(client audit.Client) Option {
 	return func(santanderLogger *SantanderLogger) {
-		santanderLogger.auditLogger = client
+		santanderLogger.auditClient = client
 	}
 }
 
-func NewLogger(options ...Option) (Logger, error) {
-	cfg := buildConfig()
+func WithConfig(config *config.Logger) Option {
+	return func(santanderLogger *SantanderLogger) {
+		santanderLogger.config = config
+	}
+}
 
+func WithFallBack(fallback audit.FallBackMethod) Option {
+	return func(santanderLogger *SantanderLogger) {
+		santanderLogger.fallback = fallback
+	}
+}
+
+func WithLabels(labels entities.Labels) Option {
+	return func(santanderLogger *SantanderLogger) {
+		santanderLogger.defaultLabels = labels
+	}
+}
+
+func New(options ...Option) (Logger, error) {
+	cfg := buildConfig()
 	zapLogger, err := cfg.Build()
 	if err != nil {
 		return nil, err

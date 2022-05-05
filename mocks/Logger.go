@@ -13,7 +13,7 @@ import (
 type Logger struct {
 	mock.Mock
 	AuditMsg *audit.Message
-	Msg *entities.Message
+	Msg      *entities.Message
 }
 
 // Audit provides a mock function with given fields: message

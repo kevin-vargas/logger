@@ -1,12 +1,16 @@
 package entities
 
-import "go.uber.org/zap/zapcore"
+import (
+	"github.com/kevin-vargas/logger/encoder"
+	"go.uber.org/zap/zapcore"
+)
 
 type Labels map[string]string
 
-func (labels *Labels) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+func (labels *Labels) MarshalLogObject(zapenc zapcore.ObjectEncoder) error {
+	enc := encoder.Get(zapenc)
 	for key, element := range *labels {
-		enc.AddString(key, element)
+		enc.AddStringValid(key, element)
 	}
 	return nil
 }

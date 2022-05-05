@@ -60,8 +60,8 @@ const (
 	fieldLabelApplication = "application"
 	fieldLabelService     = "service"
 	fieldLabelEnvironment = "environment"
-	fieldLabelLibVersion  = "lib_version"
-	fieldLabelLibLanguage = "lib_language"
+	fieldLabelLibVersion  = "lib_version"  // nuestras
+	fieldLabelLibLanguage = "lib_language" // nuestras
 	fieldLabelPodName     = "pod_name"
 	fieldLabelNodeName    = "node_name"
 )

@@ -2,19 +2,34 @@ package audit
 
 import (
 	"github.com/kevin-vargas/logger/pubsub"
-	"github.com/kevin-vargas/logger/strings"
 )
 
+type FallBackMethod func(topic string, payload *Payload)
+
+func (f FallBackMethod) toPubslih() pubsub.FallBackMethod {
+	return func(topic string, payload interface{}) {
+		payloadAudit := payload.(*Payload)
+		f(topic, payloadAudit)
+	}
+}
+
 type Client interface {
-	Audit(message *Message)
+	Audit(message *Message, fallbacks ...FallBackMethod) error
 }
 type client struct {
 	defaultTopic string
 	publisher    pubsub.Publisher
 }
 
-// if we set a default topic it will override actual message topic
-func (c *client) Audit(message *Message) {
-	topic := strings.OR(c.defaultTopic, message.Topic)
-	c.publisher.Publish(topic, &message.Payload)
+func (c *client) Audit(message *Message, fallbacks ...FallBackMethod) (err error) {
+	topic := message.Topic
+	fallbacksToPublish := make([]pubsub.FallBackMethod, len(fallbacks))
+	for i, f := range fallbacks {
+		fallbacksToPublish[i] = f.toPubslih()
+	}
+	errPublish := c.publisher.Publish(topic, &message.Payload, fallbacksToPublish...)
+	if errPublish != nil {
+		return errPublish
+	}
+	return
 }

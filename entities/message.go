@@ -74,21 +74,62 @@ func (message *Message) WithError(err Error) *Message {
 }
 
 func (message *Message) Encode(config EncodeConfig) Field {
-	defaultLabels := GetDefaultLabels()
 	defaultLog := GetDefaultLog(config.LVL)
-	message.WithLabels(defaultLabels).WithLoggerInfo(defaultLog)
+	message.WithLoggerInfo(defaultLog)
 	return zap.Inline(message)
 }
 
+type addObject func(key string, marshaler zapcore.ObjectMarshaler) error
+
 func (message *Message) MarshalLogObject(zapenc zapcore.ObjectEncoder) error {
 	enc := encoder.Get(zapenc)
-	enc.AddObject(fieldLabels, &message.labels)
-	enc.AddObject(fieldLog, &message.log)
 	enc.AddStringsValid(fieldTags, message.tags)
-	enc.AddObjectValid(fieldHttpRequest, message.httpRequest)
-	enc.AddObjectValid(fieldHttpResponse, message.httpResponse)
-	enc.AddObjectValid(fieldEvent, message.event)
-	enc.AddObjectValid(fieldTrace, message.trace)
-	enc.AddObjectValid(fieldError, message.err)
+	fields := []struct {
+		name      string
+		marshaler zapcore.ObjectMarshaler
+		add       addObject
+	}{
+		{
+			fieldLabels,
+			&message.labels,
+			enc.AddObject,
+		},
+		{
+			fieldLog,
+			&message.log,
+			enc.AddObject,
+		},
+		{
+			fieldHttpRequest,
+			message.httpRequest,
+			enc.AddObjectValid,
+		},
+		{
+			fieldHttpResponse,
+			message.httpResponse,
+			enc.AddObjectValid,
+		},
+		{
+			fieldEvent,
+			message.event,
+			enc.AddObjectValid,
+		},
+		{
+			fieldTrace,
+			message.trace,
+			enc.AddObjectValid,
+		},
+		{
+			fieldError,
+			message.err,
+			enc.AddObjectValid,
+		},
+	}
+	for _, field := range fields {
+		err := field.add(field.name, field.marshaler)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }

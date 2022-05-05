@@ -115,7 +115,10 @@ func Test_Encoder_Add_Object_Valid(t *testing.T) {
 			instance := &objectEncoder{
 				mockBaseEncoder,
 			}
-			instance.AddObjectValid(field, tt.value)
+			err := instance.AddObjectValid(field, tt.value)
+			if err != nil {
+				t.Fail()
+			}
 			mockBaseEncoder.AssertNumberOfCalls(t, "AddObject", tt.expect)
 		})
 	}

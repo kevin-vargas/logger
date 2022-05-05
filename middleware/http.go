@@ -2,14 +2,17 @@ package middleware
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/kevin-vargas/logger"
+	"github.com/kevin-vargas/logger/config"
 	"github.com/kevin-vargas/logger/entities"
 )
 
 type (
+	LoggerBuilder  func(c *config.Logger) logger.Logger
 	RequestLogger  func(l logger.Logger, r *http.Request) error
 	ResponseLogger func(l logger.Logger, r *ResponseObserver)
 )
@@ -30,50 +33,58 @@ func WithRequestLogging(rl RequestLogger) Option {
 	}
 }
 
-func WithLogger(logger logger.Logger) Option {
+func WithLoggerBuilder(lb LoggerBuilder) Option {
 	return func(args *LoggingHandler) {
-		args.instance = logger
+		args.builder = lb
 	}
 }
 
 type LoggingHandler struct {
-	instance logger.Logger
-	reqLog   RequestLogger
-	respLog  ResponseLogger
+	config  *config.Logger
+	builder LoggerBuilder
+	reqLog  RequestLogger
+	respLog ResponseLogger
 }
 
-func NewLoggingHandler(options ...Option) *LoggingHandler {
+func NewLoggingHandler(c *config.Logger, options ...Option) (*LoggingHandler, error) {
+
 	handler := &LoggingHandler{
-		reqLog:   defaultLogRequest,
-		respLog:  defaultLogResponse,
-		instance: logger.Get(),
+		config:  c,
+		reqLog:  defaultLogRequest,
+		respLog: defaultLogResponse,
+		builder: defaultLoggerBuilder,
 	}
 
 	for _, opt := range options {
 		opt(handler)
 	}
 
-	return handler
+	return handler, nil
 }
 func (h *LoggingHandler) Logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, req *http.Request) {
-		loggerInstance := h.instance
+		l := h.builder(h.config)
+
+		ctx := createRequestContext(req, withLoggerCTX(l))
+
+		req = req.Clone(ctx)
 
 		observer := &ResponseObserver{ResponseWriter: writer}
 
-		err := h.reqLog(loggerInstance, req)
+		err := h.reqLog(l, req)
+
 		if err != nil {
-			// TODO: log with err
-			// l.Error("LoggingHandler: An error occurred during request logging %v", logger.Err(err))
+			msg := fmt.Sprintf("LoggingHandler: An error occurred during request logging %s", err.Error())
+			l.Error(entities.NewMessage(msg))
 		}
 
 		next.ServeHTTP(observer, req)
-		h.respLog(loggerInstance, observer)
+		h.respLog(l, observer)
 
 	})
 }
 
-//Handle returns a wrapped handler to log http.Request/http.Response with the provided logger
+// Handle returns a wrapped handler to log http.Request/http.Response with the provided logger
 // said logger wil be propagated through the request context
 func (h *LoggingHandler) Handle(next http.HandlerFunc) http.HandlerFunc {
 	withLogging := h.Logging(next)
@@ -96,6 +107,15 @@ func defaultLogRequest(l logger.Logger, r *http.Request) (err error) {
 		},
 	}
 	msg := entities.NewMessage("Request").WithHttpRequest(req)
+
+	ctx := r.Context()
+
+	if id, ok := GetTraceId(ctx); ok {
+		msg.WithTrace(entities.Trace{
+			ID: id,
+		})
+	}
+
 	l.Info(msg)
 	return
 }
@@ -109,4 +129,13 @@ func defaultLogResponse(l logger.Logger, o *ResponseObserver) {
 	}
 	msg := entities.NewMessage("Response").WithHttpReponse(res)
 	l.Info(msg)
+}
+
+func defaultLoggerBuilder(c *config.Logger) logger.Logger {
+	withConfig := logger.WithConfig(c)
+	l, err := logger.New(withConfig)
+	if err != nil {
+		return nil
+	}
+	return l
 }
